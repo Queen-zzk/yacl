@@ -81,8 +81,6 @@ inline void ExportBufToFile(Buffer&& buf, const std::string& file_path) {
 
 openssl::UniquePkey GenRsaKeyPair(unsigned rsa_keylen) {
   /* EVP_RSA_gen() may be set deprecated by later version of OpenSSL */
-  EVP_PKEY* pkey = EVP_PKEY_new();  // placeholder
-
   openssl::UniquePkeyCtx ctx(
       EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, /* engine = default */ nullptr));
   YACL_ENFORCE(ctx != nullptr);
@@ -92,19 +90,40 @@ openssl::UniquePkey GenRsaKeyPair(unsigned rsa_keylen) {
   OSSL_RET_1(EVP_PKEY_CTX_set_rsa_keygen_bits(ctx.get(), rsa_keylen));
 
   // generate keys
+  EVP_PKEY* pkey = nullptr;
   OSSL_RET_1(EVP_PKEY_keygen(ctx.get(), &pkey));
   return openssl::UniquePkey(pkey);
 }
 
 openssl::UniquePkey GenSm2KeyPair() {
-  EVP_PKEY* pkey = EVP_PKEY_new();  // placeholder
-
   openssl::UniquePkeyCtx ctx(
       EVP_PKEY_CTX_new_id(EVP_PKEY_SM2, /* engine = default */ nullptr));
   YACL_ENFORCE(ctx != nullptr);
   OSSL_RET_1(EVP_PKEY_keygen_init(ctx.get()));
 
   // generate keys
+  EVP_PKEY* pkey = nullptr;
+  OSSL_RET_1(EVP_PKEY_keygen(ctx.get(), &pkey));
+  return openssl::UniquePkey(pkey);
+}
+
+openssl::UniquePkey GenKyberKeyPair(KyberVariant kv) {
+  // load oqsprovider to a new instance of OSSL_LIB_CTX
+  openssl::UniqueLib libctx(OSSL_LIB_CTX_new());
+  YACL_ENFORCE(libctx != nullptr);
+  openssl::UniqueProv oqs_provider(OSSL_PROVIDER_load(libctx.get(), "oqsprovider"));
+  YACL_ENFORCE(oqs_provider != nullptr);
+
+  // generate context
+  std::string propquery =
+      std::string("provider=oqsprovider,security=") + ToSecurityString(kv);
+  openssl::UniquePkeyCtx ctx(
+      EVP_PKEY_CTX_new_from_name(libctx.get(), ToName(kv).c_str(), propquery.c_str()));
+  YACL_ENFORCE(ctx != nullptr);
+  OSSL_RET_1(EVP_PKEY_keygen_init(ctx.get()));
+
+  // generate keys
+  EVP_PKEY* pkey = nullptr;
   OSSL_RET_1(EVP_PKEY_keygen(ctx.get(), &pkey));
   return openssl::UniquePkey(pkey);
 }
@@ -118,6 +137,13 @@ std::pair<Buffer, Buffer> GenRsaKeyPairToPemBuf(unsigned rsa_keygen) {
 
 std::pair<Buffer, Buffer> GenSm2KeyPairToPemBuf() {
   auto pkey = GenSm2KeyPair();
+  Buffer pk_buf = ExportPublicKeyToPemBuf(pkey);
+  Buffer sk_buf = ExportSecretKeyToPemBuf(pkey);
+  return {pk_buf, sk_buf};
+}
+
+std::pair<Buffer, Buffer> GenKyberKeyPairToPemBuf(KyberVariant kv) {
+  auto pkey = GenKyberKeyPair(kv);
   Buffer pk_buf = ExportPublicKeyToPemBuf(pkey);
   Buffer sk_buf = ExportSecretKeyToPemBuf(pkey);
   return {pk_buf, sk_buf};

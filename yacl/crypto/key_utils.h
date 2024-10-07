@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "yacl/crypto/liboqs_wrappers.h"
 #include "yacl/crypto/openssl_wrappers.h"
 
 namespace yacl::crypto {
@@ -34,14 +35,24 @@ namespace yacl::crypto {
 // in a single UniquePkey object
 [[nodiscard]] openssl::UniquePkey GenSm2KeyPair();
 
+// Generate Kyber secret key and public key pair, the resulting key pair is
+// stored in a single UniquePkey object
+[[nodiscard]] openssl::UniquePkey GenKyberKeyPair(
+    KyberVariant kv = KyberVariant::kyber512);
+
 // Generate RSA key pair, and convert the secret key (sk) and public key (pk)
 // into "PEM" format buffers, separately
 [[nodiscard]] std::pair<Buffer, Buffer> GenRsaKeyPairToPemBuf(
     unsigned rsa_keygen = 2048);
 
-// Generate RSA key pair, and convert the secret key (sk) and public key (pk)
+// Generate SM2 key pair, and convert the secret key (sk) and public key (pk)
 // into "PEM" format buffers, separately
 [[nodiscard]] std::pair<Buffer, Buffer> GenSm2KeyPairToPemBuf();
+
+// Generate Kyber key pair, and convert the secret key (sk) and public key (pk)
+// into "PEM" format buffers, separately
+[[nodiscard]] std::pair<Buffer, Buffer> GenKyberKeyPairToPemBuf(
+    KyberVariant kv = KyberVariant::kyber512);
 
 // -------------------
 // Load Any Format Key

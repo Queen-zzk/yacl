@@ -23,37 +23,48 @@
 #include "yacl/secparam.h"
 
 /* security parameter declaration */
-YACL_MODULE_DECLARE("rsa_enc", SecParam::C::k128, SecParam::S::INF);
+YACL_MODULE_DECLARE("rsa2048_enc", SecParam::C::k112, SecParam::S::INF);
+YACL_MODULE_DECLARE("rsa3072_enc", SecParam::C::k128, SecParam::S::INF);
 
 namespace yacl::crypto {
 
 // RSA with OAEP
 class RsaEncryptor : public AsymmetricEncryptor {
  public:
-  explicit RsaEncryptor(openssl::UniquePkey&& pk) : pk_(std::move(pk)) {}
-  explicit RsaEncryptor(/* pem key */ ByteContainerView pk_buf)
-      : pk_(LoadKeyFromBuf(pk_buf)) {}
+  explicit RsaEncryptor(
+      openssl::UniquePkey&& pk,
+      AsymCryptoSchema schema = AsymCryptoSchema::RSA2048_OAEP)
+      : pk_(std::move(pk)), schema_(schema) {}
+  explicit RsaEncryptor(
+      /* pem key */ ByteContainerView pk_buf,
+      AsymCryptoSchema schema = AsymCryptoSchema::RSA2048_OAEP)
+      : pk_(LoadKeyFromBuf(pk_buf)), schema_(schema) {}
 
   AsymCryptoSchema GetSchema() const override { return schema_; }
   std::vector<uint8_t> Encrypt(ByteContainerView plaintext) override;
 
  private:
   const openssl::UniquePkey pk_;
-  const AsymCryptoSchema schema_ = AsymCryptoSchema::RSA2048_OAEP;
+  const AsymCryptoSchema schema_;
 };
 
 class RsaDecryptor : public AsymmetricDecryptor {
  public:
-  explicit RsaDecryptor(openssl::UniquePkey&& sk) : sk_(std::move(sk)) {}
-  explicit RsaDecryptor(/* pem key */ ByteContainerView sk_buf)
-      : sk_(LoadKeyFromBuf(sk_buf)) {}
+  explicit RsaDecryptor(
+      openssl::UniquePkey&& sk,
+      AsymCryptoSchema schema = AsymCryptoSchema::RSA2048_OAEP)
+      : sk_(std::move(sk)), schema_(schema) {}
+  explicit RsaDecryptor(
+      /* pem key */ ByteContainerView sk_buf,
+      AsymCryptoSchema schema = AsymCryptoSchema::RSA2048_OAEP)
+      : sk_(LoadKeyFromBuf(sk_buf)), schema_(schema) {}
 
   AsymCryptoSchema GetSchema() const override { return schema_; }
   std::vector<uint8_t> Decrypt(ByteContainerView ciphertext) override;
 
  private:
   const openssl::UniquePkey sk_;
-  const AsymCryptoSchema schema_ = AsymCryptoSchema::RSA2048_OAEP;
+  const AsymCryptoSchema schema_;
 };
 
 }  // namespace yacl::crypto

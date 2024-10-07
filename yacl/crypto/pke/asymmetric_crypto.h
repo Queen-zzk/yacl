@@ -20,7 +20,15 @@
 
 namespace yacl::crypto {
 
-enum class AsymCryptoSchema { UNKNOWN, RSA2048_OAEP, RSA3072_OAEP, SM2 };
+enum class AsymCryptoSchema {
+  UNKNOWN,
+  RSA2048_OAEP,
+  RSA3072_OAEP,
+  SM2,
+  KYBER512,
+  KYBER768,
+  KYBER1024
+};
 
 class AsymmetricEncryptor {
  public:
